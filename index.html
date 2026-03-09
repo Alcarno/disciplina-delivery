@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Disciplína a Delivery týmu</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap');
+:root{
+  --ink:#004033;
+  --cream:#f8faf3;
+  --lime:#C4DE00;
+  --border:#A6DECB;
+  --muted:#008066;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);min-height:100vh;}
+
+header{background:var(--ink);padding:14px 32px;display:flex;align-items:center;border-bottom:3px solid var(--lime);}
+header h1{font-family:'Playfair Display',serif;font-size:1.2rem;color:#f8faf3;}
+
+.tabs{background:var(--ink);display:flex;padding:0 32px;overflow-x:auto;}
+.tab{padding:10px 22px;font-size:.73rem;font-weight:500;letter-spacing:.07em;text-transform:uppercase;color:#7a9e94;border-bottom:2px solid transparent;cursor:pointer;transition:all .18s;white-space:nowrap;user-select:none;}
+.tab:hover{color:#aaa;}
+.tab.active{color:var(--lime);border-bottom-color:var(--lime);}
+.tab.locked{opacity:.35;cursor:default;pointer-events:none;}
+
+.view{display:none;padding:32px;max-width:760px;}
+.view.active{display:block;}
+.view-title{font-family:'Playfair Display',serif;font-size:1.6rem;margin-bottom:28px;}
+
+.btn{background:var(--ink);color:white;border:none;padding:10px 22px;border-radius:8px;font-family:'DM Sans',sans-serif;font-weight:600;font-size:.84rem;cursor:pointer;transition:all .18s;display:inline-flex;align-items:center;gap:6px;}
+.btn:hover{background:#005a47;}
+.btn:disabled{opacity:.35;cursor:default;pointer-events:none;}
+.btn.outline{background:none;color:var(--ink);border:1.5px solid var(--border);}
+.btn.outline:hover{background:var(--ink);color:white;}
+.btn.lime{background:var(--lime);color:var(--ink);}
+.btn.lime:hover{background:#b0ca00;}
+.nav-row{display:flex;gap:10px;margin-top:28px;align-items:center;}
+.view-sub{color:var(--muted);font-size:.875rem;margin-bottom:28px;line-height:1.65;max-width:540px;margin-top:-20px;}
+
+/* ── TAB 1 ── */
+.add-form{background:white;border:1.5px solid var(--border);border-radius:14px;padding:22px 26px;max-width:500px;margin-bottom:24px;box-shadow:0 2px 12px rgba(0,64,51,.06);}
+.fg label{display:block;font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:5px;}
+.fg input{width:100%;padding:9px 13px;border:1.5px solid var(--border);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.88rem;background:var(--cream);color:var(--ink);outline:none;transition:border-color .18s;margin-bottom:12px;}
+.fg input:focus{border-color:var(--lime);background:white;}
+.activity-list{display:flex;flex-direction:column;gap:8px;max-width:500px;}
+.acard{background:white;border:1.5px solid var(--border);border-radius:10px;padding:13px 16px;display:flex;align-items:center;gap:12px;box-shadow:0 1px 5px rgba(0,0,0,.04);}
+.anum{width:28px;height:28px;border-radius:50%;background:var(--ink);color:var(--lime);font-size:.72rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.aname{flex:1;font-weight:500;font-size:.9rem;}
+.btn-rm{background:none;border:none;cursor:pointer;color:#ccc;font-size:1rem;padding:2px 5px;transition:color .15s;}
+.btn-rm:hover{color:var(--red);}
+.limit-note{font-size:.76rem;color:var(--muted);margin-top:10px;font-style:italic;}
+
+/* ── TAB 2 ── */
+.eval-progress{display:flex;align-items:center;gap:12px;margin-bottom:24px;}
+.ep-dots{display:flex;gap:5px;}
+.ep-dot{width:10px;height:10px;border-radius:50%;background:#d0e8e0;transition:background .2s;}
+.ep-dot.done-dot{background:var(--muted);}
+.ep-dot.active-dot{background:var(--lime);outline:2px solid var(--ink);outline-offset:1px;}
+.ep-label{font-size:.78rem;color:var(--muted);}
+
+.eval-card{background:white;border:1.5px solid var(--border);border-radius:16px;overflow:hidden;max-width:580px;box-shadow:0 3px 16px rgba(0,64,51,.07);}
+.eval-head{background:var(--ink);padding:18px 24px;display:flex;align-items:center;gap:14px;}
+.eval-head .anum{background:var(--lime);color:var(--ink);width:34px;height:34px;font-size:.82rem;}
+.eval-head-name{font-family:'Playfair Display',serif;font-size:1.05rem;color:white;}
+
+.qblock{padding:20px 24px;border-bottom:1.5px solid var(--border);}
+.qblock:last-child{border-bottom:none;}
+.qblock-label{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:5px;}
+.qblock-question{font-size:.92rem;font-weight:600;color:var(--ink);margin-bottom:4px;line-height:1.4;}
+.qblock-hint{font-size:.75rem;color:#888;line-height:1.5;margin-bottom:10px;font-style:italic;}
+.qblock textarea{width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.875rem;color:var(--ink);background:var(--cream);outline:none;resize:none;transition:border-color .18s;line-height:1.55;min-height:72px;}
+.qblock textarea:focus{border-color:var(--lime);background:white;}
+.qblock textarea::placeholder{color:#b0c8c0;}
+
+.eval-nav{display:flex;gap:10px;margin-top:20px;align-items:center;max-width:580px;}
+
+/* ── LIKERT ── */
+.likert-block{padding:18px 24px;border-bottom:1.5px solid var(--border);background:#fafcf8;}
+.likert-label{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:4px;}
+.likert-question{font-size:.92rem;font-weight:600;color:var(--ink);margin-bottom:12px;line-height:1.4;}
+.likert-scale{display:flex;gap:6px;align-items:center;}
+.likert-scale input[type=radio]{display:none;}
+.likert-scale label{width:38px;height:38px;border-radius:50%;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.82rem;font-weight:700;cursor:pointer;transition:all .15s;color:#aaa;background:white;}
+.likert-scale input[type=radio]:checked+label{background:var(--ink);color:var(--lime);border-color:var(--ink);}
+.likert-scale label:hover{border-color:var(--ink);color:var(--ink);}
+.likert-ends{display:flex;justify-content:space-between;margin-top:5px;font-size:.68rem;color:#999;font-style:italic;}
+
+/* ── TAB 3: MATICE ── */
+.matrix-outer{padding:0 20px 20px 20px;max-width:560px;margin:0 auto;}
+.matrix-with-axes{display:grid;grid-template-columns:32px 1fr;grid-template-rows:1fr 32px;gap:0;align-items:stretch;}
+.matrix-wrap{position:relative;width:100%;aspect-ratio:1/1;}
+.matrix-grid{position:absolute;inset:0;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;border:2px solid var(--border);border-radius:14px;overflow:hidden;}
+.matrix-dots{position:absolute;inset:0;overflow:visible;}
+.matrix-quad{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-end;padding:12px 14px;position:relative;}
+/* Kvadranty — jasně odlišené */
+.mq-tl{background:#e6f4ea;border-right:1.5px dashed #a8d5b0;border-bottom:1.5px dashed #a8d5b0;}   /* rychlé výhry — zelená */
+.mq-tr{background:#e8f0fe;border-bottom:1.5px dashed #a8c0f0;}                                       /* velké projekty — modrá */
+.mq-bl{background:#fef9e3;border-right:1.5px dashed #f0dfa0;}                                        /* výplňové — žlutá */
+.mq-br{background:#fdecea;}                                                                           /* požírač zdrojů — červená */
+.mq-name{font-family:'Playfair Display',serif;font-size:.82rem;font-weight:700;color:var(--ink);line-height:1.2;margin-bottom:2px;}
+.mq-desc{font-size:.62rem;color:#888;line-height:1.3;font-style:italic;}
+.mq-badge{position:absolute;top:10px;right:12px;font-size:1.2rem;}
+/* Osy — symetrický design */
+.ax-y-col{display:flex;align-items:center;justify-content:center;}
+.ax-y-col .ax-track{display:flex;flex-direction:column;align-items:center;gap:5px;height:100%;}
+.ax-track .ax-end{font-size:.58rem;color:#aaa;font-style:italic;writing-mode:horizontal-tb;}
+.ax-track .ax-label{font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);transform:rotate(-90deg);white-space:nowrap;flex:1;display:flex;align-items:center;}
+.ax-x-row{grid-column:2;display:flex;align-items:center;justify-content:center;padding-top:5px;}
+.ax-x-row .ax-track-x{display:flex;flex-direction:row;align-items:center;gap:6px;width:100%;}
+.ax-track-x .ax-end{font-size:.58rem;color:#aaa;font-style:italic;}
+.ax-track-x .ax-label-x{font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);flex:1;text-align:center;}
+/* Tečky — jen štítek, bez čísla */
+.dot-item{position:absolute;transform:translate(-50%,-50%);z-index:10;}
+.dot-chip{background:var(--ink);color:var(--lime);font-size:.67rem;font-weight:600;padding:4px 10px;border-radius:20px;white-space:nowrap;max-width:140px;overflow:hidden;text-overflow:ellipsis;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,.22);}
+/* ── PRIORITIZACE ── */
+.prio-list{max-width:580px;margin-top:32px;}
+.prio-section{margin-bottom:28px;}
+.prio-heading{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
+.prio-heading-icon{font-size:1.1rem;}
+.prio-heading-name{font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;color:var(--ink);}
+.prio-heading-badge{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:2px 9px;border-radius:20px;}
+.badge-green{background:#e6f4ea;color:#2d6a3f;}
+.badge-blue{background:#e8f0fe;color:#1a56a0;}
+.badge-yellow{background:#fef9e3;color:#7a6000;}
+.badge-red{background:#fdecea;color:#a0291a;}
+.prio-recommendation{font-size:.78rem;color:#666;line-height:1.65;margin-bottom:12px;padding:10px 14px;border-left:3px solid var(--border);background:white;border-radius:0 8px 8px 0;}
+.prio-recommendation p{margin-bottom:4px;}
+.prio-recommendation p:last-child{margin-bottom:0;}
+.prio-empty{font-size:.82rem;color:#bbb;font-style:italic;padding:8px 0;}
+.prio-card{background:white;border:1.5px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:10px;box-shadow:0 1px 6px rgba(0,64,51,.05);}
+.prio-card-head{padding:12px 16px;display:flex;align-items:center;gap:10px;border-bottom:1.5px solid var(--border);}
+.prio-card-name{font-weight:600;font-size:.9rem;flex:1;}
+.prio-scores{font-size:.72rem;color:var(--muted);}
+.prio-next-steps{padding:12px 16px;background:var(--cream);}
+.prio-next-label{font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:6px;}
+.prio-next-input{width:100%;border:none;border-bottom:1.5px solid var(--border);background:transparent;font-family:'DM Sans',sans-serif;font-size:.87rem;color:var(--ink);padding:5px 2px;outline:none;transition:border-color .18s;}
+.prio-next-input:focus{border-bottom-color:var(--lime);}
+.prio-next-input::placeholder{color:#b0c8c0;}
+
+
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:white;padding:9px 22px;border-radius:20px;font-size:.82rem;opacity:0;pointer-events:none;transition:opacity .25s;z-index:200;}
+#toast.show{opacity:1;}
+
+@media(max-width:600px){.view{padding:20px 16px;}}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⚡ Disciplína a Delivery týmu</h1>
+</header>
+
+<div class="tabs">
+  <div class="tab active" id="tab-aktivity" onclick="goTab('aktivity')">1 · Aktivity</div>
+  <div class="tab locked" id="tab-hodnoceni" onclick="goTab('hodnoceni')">2 · Hodnocení</div>
+  <div class="tab locked" id="tab-matice" onclick="goTab('matice')">3 · Matice</div>
+</div>
+
+<!-- TAB 1 -->
+<div class="view active" id="view-aktivity">
+  <h2 class="view-title">Na čem tráví tým nejvíc času?</h2>
+  <p class="view-sub">Vypiš až pět hlavních aktivit, kterými tvůj tým tráví čas.</p>
+  <div class="add-form">
+    <div class="fg">
+      <label>Název aktivity</label>
+      <input id="inp-activity" placeholder="např. Týdenní reporting pro vedení" onkeydown="if(event.key==='Enter')addActivity()"/>
+    </div>
+    <button class="btn" onclick="addActivity()">+ Přidat</button>
+  </div>
+  <div class="activity-list" id="activity-list"></div>
+  <p class="limit-note" id="limit-note" style="display:none">✓ Dosáhla jsi maxima 10 aktivit.</p>
+  <div class="nav-row">
+    <button class="btn lime" id="btn-to-hodnoceni" onclick="goTab('hodnoceni')" disabled>Pokračovat na hodnocení →</button>
+  </div>
+</div>
+
+<!-- TAB 2 -->
+<div class="view" id="view-hodnoceni">
+  <h2 class="view-title">Hodnocení aktivit</h2>
+  <div class="eval-progress">
+    <span class="ep-label">Postup:</span>
+    <div class="ep-dots" id="ep-dots"></div>
+    <span class="ep-label" id="ep-count"></span>
+  </div>
+  <div class="eval-card" id="eval-card"></div>
+  <div class="eval-nav">
+    <button class="btn outline" id="btn-prev" onclick="evalPrev()">← Zpět</button>
+    <button class="btn lime" id="btn-next">Další →</button>
+  </div>
+</div>
+
+<!-- TAB 3: MATICE -->
+<div class="view" id="view-matice">
+  <h2 class="view-title">Matice: Dopad vs. Cena</h2>
+  <div class="matrix-outer">
+    <div class="matrix-with-axes">
+      <!-- OSA Y (vlevo) -->
+      <div class="ax-y-col">
+        <div class="ax-track">
+          <span class="ax-end">vysoký</span>
+          <span class="ax-label">◄ Dopad ►</span>
+          <span class="ax-end">nízký</span>
+        </div>
+      </div>
+      <!-- MATICE -->
+      <div class="matrix-wrap" id="matrix-wrap">
+        <div class="matrix-grid">
+          <div class="matrix-quad mq-tl">
+            <div class="mq-badge">⭐</div>
+            <div class="mq-name">Rychlé výhry</div>
+            <div class="mq-desc">Vysoký dopad, nízká cena — priorita číslo jedna</div>
+          </div>
+          <div class="matrix-quad mq-tr">
+            <div class="mq-badge">🚀</div>
+            <div class="mq-name">Velké projekty</div>
+            <div class="mq-desc">Vysoký dopad, vysoká cena — stojí za to, ale vyžadují plánování a kapacity</div>
+          </div>
+          <div class="matrix-quad mq-bl">
+            <div class="mq-badge">📋</div>
+            <div class="mq-name">Výplňové úkoly</div>
+            <div class="mq-desc">Nízký dopad, nízká cena — aktivita, kterou je potřeba delegovat nebo dělat jen když zbyde čas</div>
+          </div>
+          <div class="matrix-quad mq-br">
+            <div class="mq-badge">🔥</div>
+            <div class="mq-name">Požírač zdrojů</div>
+            <div class="mq-desc">Nízký dopad, vysoká cena — aktivita, kterou nemá smysl dělat</div>
+          </div>
+        </div>
+        <div class="matrix-dots" id="matrix-dots"></div>
+      </div>
+      <!-- OSA X (dole) -->
+      <div class="ax-x-row">
+        <div class="ax-track-x">
+          <span class="ax-end">nízká</span>
+          <span class="ax-label-x">◄ Cena ►</span>
+          <span class="ax-end">vysoká</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="prio-list" id="prio-list"></div>
+  <div class="nav-row" style="max-width:580px;margin-top:28px;">
+    <button class="btn outline" onclick="goTab('hodnoceni')">← Upravit hodnocení</button>
+    <button class="btn lime" onclick="exportPDF()">🖨 Exportovat</button>
+  </div>
+</div>
+
+
+
+<div id="toast"></div>
+
+<script>
+let activities = [];
+let answers  = {}; // id → { dopad, cena, smer }
+let ratings  = {}; // id → { dopadScore, cenaScore } (1–5)
+let evalIdx  = 0;
+
+const QUESTIONS = [
+  {
+    key: 'dopad',
+    label: 'Dopad',
+    question: 'Co se stane, když to přestaneme dělat?',
+    hint: 'Jak to zlepší zkušenosti zákazníka? Jaký to má ekonomický dopad? Jaký problém tím řešíme?',
+    placeholder: 'např. Zákazníci by čekali déle na odpověď, interně bychom ztratili přehled o stavu…',
+  },
+  {
+    key: 'cena',
+    label: 'Cena',
+    question: 'Kolik nás to stojí — čas, peníze, energie?',
+    hint: 'Zkus odhadnout aspoň řádově: kolik hodin týdně, kolik lidí, jaké přímé náklady. Jak moc je to složité? Závisí to i na jiných týmech?',
+    placeholder: 'např. ~3 hodiny týdně (2 lidi), žádné přímé náklady, ale hodně koordinace…',
+  },
+  {
+    key: 'smer',
+    label: 'Směr',
+    question: 'Posouvá nás to k naplnění firemních priorit?',
+    hint: 'Víš, proč to tým dělá? Jak nás to posouvá?',
+    placeholder: 'např. Má to přímou vazbu — dokončením projektu zkrátíme čas na vyřízení žádosti klienta o polovinu.',
+  },
+];
+
+
+function uid(){ return Math.random().toString(36).slice(2,8); }
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2200); }
+
+// ── TAB 1 ──
+function addActivity(){
+  if(activities.length>=10){ toast('Maximum 10 aktivit'); return; }
+  const inp=document.getElementById('inp-activity');
+  const name=inp.value.trim();
+  if(!name){ inp.focus(); return; }
+  activities.push({id:uid(), name});
+  inp.value=''; inp.focus();
+  renderActivities();
+}
+function removeActivity(id){
+  activities=activities.filter(a=>a.id!==id);
+  delete answers[id];
+  delete ratings[id];
+  renderActivities();
+}
+function renderActivities(){
+  document.getElementById('activity-list').innerHTML=activities.map((a,i)=>`
+    <div class="acard">
+      <div class="anum">${i+1}</div>
+      <div class="aname">${a.name}</div>
+      <button class="btn-rm" onclick="removeActivity('${a.id}')">✕</button>
+    </div>`).join('');
+  document.getElementById('limit-note').style.display=activities.length>=10?'block':'none';
+  document.getElementById('inp-activity').disabled=activities.length>=10;
+  document.getElementById('btn-to-hodnoceni').disabled=activities.length===0;
+  if(activities.length>0) document.getElementById('tab-hodnoceni').classList.remove('locked');
+}
+
+// ── TAB 2 ──
+function renderEvalCard(){
+  const a=activities[evalIdx];
+  const ev=answers[a.id]||{};
+  const rt=ratings[a.id]||{};
+  document.getElementById('ep-dots').innerHTML=activities.map((_,i)=>
+    `<div class="ep-dot ${i<evalIdx?'done-dot':i===evalIdx?'active-dot':''}"></div>`).join('');
+  document.getElementById('ep-count').textContent=`${evalIdx+1} / ${activities.length}`;
+
+  const likertHTML=(key,label,question,lo,hi)=>{
+    const val=rt[key]||0;
+    const radios=[1,2,3,4,5].map(n=>`
+      <input type="radio" name="l-${a.id}-${key}" id="l-${a.id}-${key}-${n}" value="${n}" ${val===n?'checked':''} onchange="saveRating('${a.id}','${key}',${n})">
+      <label for="l-${a.id}-${key}-${n}">${n}</label>`).join('');
+    return `<div class="likert-block">
+      <div class="likert-label">Vyhodnocení · ${label}</div>
+      <div class="likert-question">${question}</div>
+      <div class="likert-scale">${radios}</div>
+      <div class="likert-ends"><span>${lo}</span><span>${hi}</span></div>
+    </div>`;
+  };
+
+  document.getElementById('eval-card').innerHTML=`
+    <div class="eval-head">
+      <div class="anum" style="background:var(--lime);color:var(--ink);width:34px;height:34px;font-size:.82rem;">${evalIdx+1}</div>
+      <div class="eval-head-name">${a.name}</div>
+    </div>
+    ${QUESTIONS.map(q=>`
+      <div class="qblock">
+        <div class="qblock-label">${q.label}</div>
+        <div class="qblock-question">${q.question}</div>
+        <div class="qblock-hint">${q.hint}</div>
+        <textarea placeholder="${q.placeholder}"
+          oninput="saveAnswer('${a.id}','${q.key}',this.value)"
+        >${ev[q.key]||''}</textarea>
+      </div>`).join('')}
+    ${likertHTML('dopadScore','Dopad','Jak velký dopad má tato aktivita?','Minimální','Zásadní')}
+    ${likertHTML('cenaScore','Cena','Jak vysoká je cena (čas, energie, náklady)?','Zanedbatelná','Velmi vysoká')}`;
+
+  document.getElementById('btn-prev').style.visibility=evalIdx===0?'hidden':'visible';
+  const isLast=evalIdx===activities.length-1;
+  const nb=document.getElementById('btn-next');
+  nb.textContent=isLast?'Zobrazit matici →':'Další aktivita →';
+  nb.onclick=isLast?()=>goTab('matice'):evalNext;
+}
+
+function saveAnswer(id,key,val){
+  if(!answers[id]) answers[id]={};
+  answers[id][key]=val;
+}
+function saveRating(id,key,val){
+  if(!ratings[id]) ratings[id]={};
+  ratings[id][key]=val;
+  // unlock matice tab if at least one activity has both scores
+  const any=activities.some(a=>{const r=ratings[a.id]||{};return r.dopadScore&&r.cenaScore;});
+  if(any) document.getElementById('tab-matice').classList.remove('locked');
+}
+function evalNext(){ if(evalIdx<activities.length-1){evalIdx++;renderEvalCard();} }
+function evalPrev(){ if(evalIdx>0){evalIdx--;renderEvalCard();} }
+
+// ── TAB 3: MATICE ──
+const QUADS = [
+  {
+    key: 'rychle',
+    icon: '⭐',
+    name: 'Rychlé výhry',
+    badge: 'badge-green',
+    test: (d,c) => d>=3 && c<=3,
+    rec: [
+      'Pokud má aktivita jasný dopad na zákazníka / efektivitu / výnos a je relativně snadná → neodkládej.',
+      'Nečekej na „dokonalost". Cílem je rychlé doručení hodnoty.',
+      'Sleduj realizaci, ne proces – důležitý je výsledek.',
+      'Sdílej úspěchy v týmu a posiluj kulturu zlepšování.',
+    ],
+    placeholder: 'Co s tím uděláme a kdy?',
+  },
+  {
+    key: 'velke',
+    icon: '🚀',
+    name: 'Velké projekty',
+    badge: 'badge-blue',
+    test: (d,c) => d>=3 && c>3,
+    rec: [
+      'Potvrď, že hodnota je skutečně vysoká (data, zákaznický dopad, ekonomika). Každý projekt má svůj business case.',
+      'Rozděl iniciativu na menší části s měřitelnými milníky a ukazateli úspěchu.',
+      'Ujisti se, že má projekt jasného vlastníka.',
+      'Zajisti kapacitu týmu – pokud něco začínáš, něco jiného musí skončit.',
+      'Pravidelně vyhodnocuj přínos a přemýšlej, jestli je projekt potřeba upravit nebo zastavit.',
+    ],
+    placeholder: 'Kdo je vlastník? Jaký je první milník?',
+  },
+  {
+    key: 'vyplnove',
+    icon: '📋',
+    name: 'Výplňové úkoly',
+    badge: 'badge-yellow',
+    test: (d,c) => d<3 && c<=3,
+    rec: [
+      'Pokud to nepřináší významnou hodnotu, proč to vůbec děláme?',
+      'Lze to zjednodušit, zautomatizovat nebo sloučit s jinou činností?',
+      'Minimalizuj čas, který tomu tým věnuje.',
+      'Zreviduj, kdo je za to zodpovědný.',
+      'Pravidelně reviduj, zda je to stále potřeba.',
+    ],
+    placeholder: 'Jak to zjednodušíme nebo delegujeme?',
+  },
+  {
+    key: 'poziraci',
+    icon: '🔥',
+    name: 'Požírač zdrojů',
+    badge: 'badge-red',
+    test: (d,c) => d<3 && c>3,
+    rec: [
+      'Pokud není jasný zákaznický ani ekonomický dopad → STOP.',
+      'Pokud je důvod „protože se to tak vždy dělalo" → STOP.',
+      'Pokud je to zadání od někoho jiného, vyžádej si vyjasnění hodnoty a očekávaného přínosu.',
+      'Měj odvahu říct ne nebo navrhni alternativu s lepším poměrem effort/value.',
+      'Uč tým ekonomickému myšlení: čas, kapacita a energie jsou náklad.',
+    ],
+    placeholder: 'Jak to zastavíme nebo omezíme?',
+  },
+];
+
+let nextSteps = {}; // id → string
+
+function renderMatice(){
+  const dotsEl=document.getElementById('matrix-dots');
+  dotsEl.innerHTML='';
+
+  // --- tečky na matici ---
+  // spočítáme pozice a rozházíme překrývající se
+  const positions = [];
+  activities.forEach((a)=>{
+    const rt=ratings[a.id]||{};
+    const dopad=parseInt(rt.dopadScore)||0;
+    const narocnost=parseInt(rt.cenaScore)||0;
+    if(!dopad||!narocnost) return;
+    const baseX = 5 + (narocnost-1)/4*90;
+    const baseY = 5 + (5-dopad)/4*90;
+
+    // najdi, kolik bodů už sedí na stejné pozici
+    const samePos = positions.filter(p => p.bx===baseX && p.by===baseY);
+    const count = samePos.length;
+
+    // rozlož je vertikálně — každý další o 7% níž
+    const xPct = baseX;
+    const yPct = baseY + count * 7;
+
+    positions.push({bx:baseX, by:baseY});
+
+    const dot=document.createElement('div');
+    dot.className='dot-item';
+    dot.style.left=xPct+'%';
+    dot.style.top=yPct+'%';
+    dot.innerHTML=`<div class="dot-chip">${escHtml(a.name)}</div>`;
+    dotsEl.appendChild(dot);
+  });
+
+  // --- prioritizační seznam ---
+  const prio=document.getElementById('prio-list');
+  prio.innerHTML='';
+
+  QUADS.forEach(q=>{
+    const matching=activities.filter(a=>{
+      const rt=ratings[a.id]||{};
+      const d=parseInt(rt.dopadScore)||0;
+      const c=parseInt(rt.cenaScore)||0;
+      return d&&c&&q.test(d,c);
+    });
+
+    const section=document.createElement('div');
+    section.className='prio-section';
+
+    const recLines=q.rec.map(r=>`<p>→ ${escHtml(r)}</p>`).join('');
+    const cards=matching.length===0
+      ? `<div class="prio-empty">Žádná aktivita v tomto kvadrantu.</div>`
+      : matching.map(a=>{
+          const rt=ratings[a.id]||{};
+          const d=parseInt(rt.dopadScore)||0;
+          const c=parseInt(rt.cenaScore)||0;
+          const ns=escAttr(nextSteps[a.id]||'');
+          return `<div class="prio-card">
+            <div class="prio-card-head">
+              <div class="prio-card-name">${escHtml(a.name)}</div>
+              <div class="prio-scores">Dopad: ${d}/5 · Cena: ${c}/5</div>
+            </div>
+            <div class="prio-next-steps">
+              <div class="prio-next-label">Další kroky</div>
+              <input class="prio-next-input"
+                placeholder="${q.placeholder}"
+                value="${ns}"
+                oninput="nextSteps['${a.id}']=this.value"/>
+            </div>
+          </div>`;
+        }).join('');
+
+    section.innerHTML=`
+      <div class="prio-heading">
+        <span class="prio-heading-icon">${q.icon}</span>
+        <span class="prio-heading-name">${q.name}</span>
+        <span class="prio-heading-badge ${q.badge}">${matching.length} ${matching.length===1?'aktivita':matching.length>=2&&matching.length<=4?'aktivity':'aktivit'}</span>
+      </div>
+      <div class="prio-recommendation">${recLines}</div>
+      ${cards}`;
+    prio.appendChild(section);
+  });
+}
+
+function escHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escAttr(s){ return s.replace(/"/g,'&quot;'); }
+
+// ── NAV ──
+function goTab(name){
+  if(name==='hodnoceni'&&activities.length===0){toast('Nejprve přidej aktivity');return;}
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
+  if(name==='hodnoceni'){evalIdx=0;renderEvalCard();}
+  if(name==='matice'){renderMatice();}
+}
+
+// ── EXPORT ──
+function exportPDF(){
+  const date=new Date().toLocaleDateString('cs-CZ',{day:'numeric',month:'long',year:'numeric'});
+
+  // ── statická matice ──
+  const matrixSize=400;
+  const pad=20;
+  const inner=matrixSize-2*pad;
+
+  const dots=activities.map(a=>{
+    const rt=ratings[a.id]||{};
+    const d=parseInt(rt.dopadScore)||0;
+    const c=parseInt(rt.cenaScore)||0;
+    if(!d||!c) return '';
+    const x=pad+(c-1)/4*inner;
+    const y=pad+(5-d)/4*inner;
+    return `<div style="position:absolute;left:${x}px;top:${y}px;transform:translate(-50%,-50%);z-index:10;">
+      <div style="background:#004033;color:#C4DE00;font-size:9px;font-weight:700;padding:3px 8px;border-radius:20px;white-space:nowrap;border:2px solid white;box-shadow:0 1px 5px rgba(0,0,0,.2);max-width:110px;overflow:hidden;text-overflow:ellipsis;">${escHtml(a.name)}</div>
+    </div>`;
+  }).join('');
+
+  const matrixHTML=`
+  <div style="margin-bottom:32px;page-break-inside:avoid;">
+    <h2 style="font-family:'Playfair Display',serif;font-size:16px;margin-bottom:16px;">Matice: Dopad vs. Cena</h2>
+    <div style="display:grid;grid-template-columns:24px 1fr;grid-template-rows:${matrixSize}px 24px;gap:0;width:${matrixSize+24}px;">
+      <div style="display:flex;align-items:center;justify-content:center;">
+        <span style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#008066;transform:rotate(-90deg);white-space:nowrap;">◄ Dopad ►</span>
+      </div>
+      <div style="position:relative;width:${matrixSize}px;height:${matrixSize}px;">
+        <!-- mřížka jako pozadí -->
+        <div style="position:absolute;inset:0;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;border:2px solid #A6DECB;border-radius:12px;overflow:hidden;z-index:0;">
+          <div style="background:#e6f4ea;border-right:1.5px dashed #a8d5b0;border-bottom:1.5px dashed #a8d5b0;padding:8px 10px;display:flex;flex-direction:column;justify-content:flex-end;">
+            <div style="font-family:'Playfair Display',serif;font-size:9px;font-weight:700;color:#004033;">⭐ Rychlé výhry</div>
+          </div>
+          <div style="background:#e8f0fe;border-bottom:1.5px dashed #a8c0f0;padding:8px 10px;display:flex;flex-direction:column;justify-content:flex-end;">
+            <div style="font-family:'Playfair Display',serif;font-size:9px;font-weight:700;color:#004033;">🚀 Velké projekty</div>
+          </div>
+          <div style="background:#fef9e3;border-right:1.5px dashed #f0dfa0;padding:8px 10px;display:flex;flex-direction:column;justify-content:flex-end;">
+            <div style="font-family:'Playfair Display',serif;font-size:9px;font-weight:700;color:#004033;">📋 Výplňové úkoly</div>
+          </div>
+          <div style="background:#fdecea;padding:8px 10px;display:flex;flex-direction:column;justify-content:flex-end;">
+            <div style="font-family:'Playfair Display',serif;font-size:9px;font-weight:700;color:#004033;">🔥 Požírač zdrojů</div>
+          </div>
+        </div>
+        <!-- tečky — vlastní vrstva, overflow:visible -->
+        <div style="position:absolute;inset:0;overflow:visible;z-index:1;">
+          ${dots}
+        </div>
+      </div>
+      <div></div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:6px;padding-top:4px;">
+        <span style="font-size:8px;color:#aaa;font-style:italic;">nízká</span>
+        <span style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#008066;">◄ Cena ►</span>
+        <span style="font-size:8px;color:#aaa;font-style:italic;">vysoká</span>
+      </div>
+    </div>
+  </div>`;
+
+  // ── sekce podle kvadrantů ──
+  const badgeColors = {
+    'badge-green': 'background:#e6f4ea;color:#2d6a3f;',
+    'badge-blue':  'background:#e8f0fe;color:#1a56a0;',
+    'badge-yellow':'background:#fef9e3;color:#7a6000;',
+    'badge-red':   'background:#fdecea;color:#a0291a;',
+  };
+
+  const sections = QUADS.map(q => {
+    const matching = activities.filter(a => {
+      const rt = ratings[a.id]||{};
+      const d = parseInt(rt.dopadScore)||0;
+      const c = parseInt(rt.cenaScore)||0;
+      return d && c && q.test(d, c);
+    });
+
+    const recLines = q.rec.map(r => `<div style="margin-bottom:3px;">→ ${escHtml(r)}</div>`).join('');
+
+    const cards = matching.length === 0
+      ? `<div style="font-size:12px;color:#bbb;font-style:italic;padding:6px 0 12px;">Žádná aktivita v tomto kvadrantu.</div>`
+      : matching.map(a => {
+          const ev = answers[a.id]||{};
+          const rt = ratings[a.id]||{};
+          const d = parseInt(rt.dopadScore)||0;
+          const c = parseInt(rt.cenaScore)||0;
+          const ns = nextSteps[a.id]||'';
+          const qBlocks = QUESTIONS.map(qu => `
+            <div style="margin-bottom:10px;">
+              <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:#008066;margin-bottom:2px;">${qu.label} — ${qu.question}</div>
+              <div style="font-size:11px;color:#333;line-height:1.55;white-space:pre-wrap;">${ev[qu.key] ? escHtml(ev[qu.key]) : '<span style="color:#bbb;font-style:italic;">Nevyplněno</span>'}</div>
+            </div>`).join('');
+          return `<div style="background:white;border:1.5px solid #c8ddd6;border-radius:12px;overflow:hidden;margin-bottom:12px;page-break-inside:avoid;">
+            <div style="background:#004033;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;">
+              <span style="font-family:'Playfair Display',serif;font-size:13px;color:white;">${escHtml(a.name)}</span>
+              <span style="font-size:10px;color:#A6DECB;">Dopad: ${d}/5 · Cena: ${c}/5</span>
+            </div>
+            <div style="padding:14px 16px;">${qBlocks}</div>
+            <div style="padding:10px 16px;background:#f8faf3;border-top:1.5px solid #c8ddd6;">
+              <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:#008066;margin-bottom:4px;">Další kroky</div>
+              <div style="font-size:12px;color:#004033;min-height:16px;">${ns ? escHtml(ns) : '<span style="color:#bbb;font-style:italic;">Nevyplněno</span>'}</div>
+            </div>
+          </div>`;
+        }).join('');
+
+    return `<div style="margin-bottom:28px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <span style="font-size:1rem;">${q.icon}</span>
+        <span style="font-family:'Playfair Display',serif;font-size:15px;font-weight:700;color:#004033;">${q.name}</span>
+        <span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;padding:2px 8px;border-radius:20px;${badgeColors[q.badge]}">${matching.length} ${matching.length===1?'aktivita':matching.length>=2&&matching.length<=4?'aktivity':'aktivit'}</span>
+      </div>
+      <div style="font-size:11px;color:#666;line-height:1.65;margin-bottom:10px;padding:8px 12px;border-left:3px solid #A6DECB;background:white;border-radius:0 8px 8px 0;">${recLines}</div>
+      ${cards}
+    </div>`;
+  }).join('');
+
+  const full=`<!DOCTYPE html><html lang="cs"><head><meta charset="UTF-8"><title>Disciplína a Delivery</title>
+  <style>@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@400;500;600&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'DM Sans',sans-serif;background:white;color:#1c1c1e;padding:48px;max-width:800px;margin:0 auto;}
+  @media print{.np{display:none;}body{padding:24px;}}
+  </style></head><body>
+  <div style="border-bottom:3px solid #C4DE00;padding-bottom:16px;margin-bottom:32px;display:flex;justify-content:space-between;align-items:flex-end;">
+    <div>
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#008066;margin-bottom:4px;">Breakout aktivita</div>
+      <h1 style="font-family:'Playfair Display',serif;font-size:24px;">Disciplína a Delivery týmu</h1>
+    </div>
+    <div style="text-align:right;font-size:12px;color:#888;">${date}<br>Aktivit: <strong>${activities.length}</strong></div>
+  </div>
+  ${matrixHTML}
+  ${sections}
+  <div class="np" style="margin-top:32px;text-align:center;">
+    <button onclick="window.print()" style="background:#004033;color:white;border:none;padding:11px 28px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;">🖨 Uložit jako PDF</button>
+  </div>
+  </body></html>`;
+
+  const blob=new Blob([full],{type:'text/html'});
+  const url=URL.createObjectURL(blob);
+  const win=window.open(url,'_blank');
+  if(win) win.onload=()=>setTimeout(()=>URL.revokeObjectURL(url),5000);
+}
+
+renderActivities();
+</script>
+</body>
+</html>
